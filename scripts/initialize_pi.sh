@@ -1,75 +1,88 @@
 #!/bin/bash
-# Frank Meadows - Pi Bootstrap Script v1.0
-# Usage: sudo bash pi-bootstrap.sh
+# Frank Meadows - Modular Pi Bootstrap v1.3
+# Focused on: Gatus (Observability), Beszel (Resources), Dozzle (Logs)
 
 set -e # Exit on error
+set -o pipefail
 
 echo "🚀 Starting Raspberry Pi Bootstrap..."
 
-# 1. System Self-Update
+# --- 1. SYSTEM REFRESH ---
 echo "🔄 Updating system packages..."
-apt update && apt full-upgrade -y
+sudo apt update && sudo apt full-upgrade -y
 
-# 2. Install Essentials
+# --- 2. INSTALL ESSENTIALS ---
 echo "🛠️ Installing essential tools..."
-apt install -y vim git curl htop build-essential ca-certificates python3-pip
+sudo apt install -y vim git curl htop build-essential ca-certificates
 
-# 3. Docker Installation (Official Script)
+# --- 3. DOCKER ENGINE SETUP ---
 if ! [ -x "$(command -v docker)" ]; then
-    echo "🐳 Installing Docker..."
+    echo "🐳 Installing Docker Engine..."
     curl -sSL https://get.docker.com | sh
-    usermod -aG docker $USER
-    echo "✅ Docker installed. User added to docker group."
+    sudo usermod -aG docker "$USER"
+    sudo apt install -y docker-compose-plugin
 else
     echo "🐳 Docker already installed, skipping..."
 fi
 
-# 4. Docker Compose Setup (Plugin)
-echo "📦 Ensuring Docker Compose is ready..."
-apt install -y docker-compose-plugin
+# --- 4. CONFIGURATION: GATUS ---
+STACK_DIR="/opt/stacks/monitoring"
+sudo mkdir -p "$STACK_DIR/gatus-config"
+sudo chown -R "$USER:$USER" /opt/stacks
 
-# 5. Application Stack Initialization
-# We'll create a default directory for your services
-STACK_DIR="/opt/stacks/initial-apps"
-mkdir -p "$STACK_DIR"
+echo "📝 Writing Gatus configuration..."
+cat <<EOF > "$STACK_DIR/gatus-config/config.yaml"
+endpoints:
+  - name: TerraMaster
+    url: http://10.0.0.250
+    interval: 30s
+    conditions:
+      - "[STATUS] == 200"
 
-cat <<EOF > "$STACK_DIR/docker-compose.yml"
-services:
-  portainer:
-    image: portainer/portainer-ce:latest
-    container_name: portainer
-    command: -H unix:///var/run/docker.sock
-    restart: always
-    ports:
-      - 9443:9443
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
-
-  watchtower:
-    image: containrrr/watchtower
-    container_name: watchtower
-    restart: always
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_POLL_INTERVAL=86400 # Check daily
-
-volumes:
-  portainer_data:
+  - name: Synology
+    url: http://10.0.0.249
+    interval: 30s
+    conditions:
+      - "[STATUS] == 200"
 EOF
 
-echo "🚢 Spinning up initial container stack (Portainer + Watchtower)..."
-docker compose -f "$STACK_DIR/docker-compose.yml" up -d
+# --- 5. AGENT STACK DEPLOYMENT ---
+echo "🚢 Deploying Observability Agents..."
+cat <<EOF > "$STACK_DIR/docker-compose.yml"
+services:
+  gatus:
+    image: twinproduction/gatus:latest
+    container_name: gatus
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    volumes:
+      - ./gatus-config:/config
 
-# 6. Cleanup & Finalize
-echo "🧹 Cleaning up..."
-apt autoremove -y
+  beszel-agent:
+    image: henrygd/beszel-agent:latest
+    container_name: beszel-agent
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Secure read-only mount
+    environment:
+      - PORT=45876
+
+  dozzle-agent:
+    image: amir20/dozzle:latest
+    container_name: dozzle-agent
+    restart: unless-stopped
+    command: agent
+    ports:
+      - 7007:7007
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Secure read-only mount
+EOF
+
+docker compose -f "$STACK_DIR/docker-compose.yml" up -d
 
 echo "------------------------------------------------"
 echo "✅ BOOTSTRAP COMPLETE"
-echo "Next steps: "
-echo "1. Reboot the Pi: 'sudo reboot'"
-echo "2. Access Portainer at https://<PI-IP>:9443"
+echo "Active Dashboard: http://$(hostname -I | awk '{print $1}'):8080"
 echo "------------------------------------------------"
