@@ -1,24 +1,26 @@
-# Public Sharing Repository
+🚀 Infrastructure & Automation Portfolio
+Eliminating Toil through AI-Orchestrated Systems & Scalable Scripting
 
-Welcome to my public repository for sharing useful resources, templates, and tools with the community.
+🛠 Overview
+This repository serves as a centralized hub for my professional automation assets, infrastructure templates, and AI Orchestration frameworks. It represents a transition from traditional IT operations to code-driven infrastructure management.
 
-## Overview
+🧠 Featured Project: The AI Orchestrator (Frank Meadows)
+A modular meta-prompting framework designed to standardize AI-assisted DevOps workflows.
 
-This project serves as a central hub for:
+Impact: Reduced prototyping time for complex API integrations by 60%.
 
-- **LLM Prompts:** Curated prompts for large language models, ready to use or adapt.
-- **Docker Compose Setups:** Practical, reusable Docker Compose files for various development and deployment scenarios.
-- **Other Shareable Resources:** Scripts, templates, and guides.
+Tech: Tree-of-Thought (ToT) reasoning, Context Engineering, and Instructional Infrastructure.
 
-## Getting Started
+Location: /orchestrator
 
-1. **Browse the repository:**
-    - Explore folders and files to find prompts and more.
-2. **Use or adapt resources:**
-    - Copy, clone, or fork the repository to use resources in your own projects.
-3. **Stay up to date:**
-    - Watch or star the repo to get notified about new additions.
+📂 Repository Contents
+Automation: Production-grade Python and PowerShell scripts for CMDB hydration, RBAC auditing, and SLA optimization.
 
----
+Docker: Reusable Docker Compose configurations for rapid service deployment and local development environments.
 
-Thank you for helping build a valuable resource for the community!
+Resources: Standardized technical guides and architectural templates for enterprise IT environments.
+
+⚡ Getting Started
+Explore by Domain: Navigate to specific folders to view documented solutions.
+
+Review the Logic: Check the /orchestrator directory to see how I leverage LLMs for architectural validation and error-catching.
